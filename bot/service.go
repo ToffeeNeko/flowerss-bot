@@ -2,11 +2,12 @@ package bot
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/indes/flowerss-bot/config"
+	"github.com/indes/flowerss-bot/log"
 	"github.com/indes/flowerss-bot/model"
+
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -96,8 +97,12 @@ func SendError(c *tb.Chat) {
 
 //BroadNews send new contents message to subscriber
 func BroadNews(source *model.Source, subs []model.Subscribe, contents []model.Content) {
-
-	log.Printf("Source Title: <%s> Subscriber: %d New Contents: %d", source.Title, len(subs), len(contents))
+	log.Infow("broadcast news",
+		"feed id", source.ID,
+		"feed title", source.Title,
+		"subscriber count", len(subs),
+		"new contents", len(contents),
+	)
 	for _, content := range contents {
 
 		previewText := trimDescription(content.Description, config.PreviewText)
@@ -239,10 +244,22 @@ func HasAdminType(t tb.ChatType) bool {
 
 // GetMentionFromMessage get message mention
 func GetMentionFromMessage(m *tb.Message) (mention string) {
-	for _, entity := range m.Entities {
-		if entity.Type == tb.EntityMention {
-			if mention == "" {
-				mention = m.Text[entity.Offset : entity.Offset+entity.Length]
+	if m.Text != "" {
+		for _, entity := range m.Entities {
+			if entity.Type == tb.EntityMention {
+				if mention == "" {
+					mention = m.Text[entity.Offset : entity.Offset+entity.Length]
+					return
+				}
+			}
+		}
+	} else {
+		for _, entity := range m.CaptionEntities {
+			if entity.Type == tb.EntityMention {
+				if mention == "" {
+					mention = m.Caption[entity.Offset : entity.Offset+entity.Length]
+					return
+				}
 			}
 		}
 	}
